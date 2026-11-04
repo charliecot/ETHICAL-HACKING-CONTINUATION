@@ -1,921 +1,958 @@
-# DNS HIERARCHY — A COMPLETE BEGINNER-TO-ADVANCED GUIDE
+# DNS RECORD TYPES — COMPLETE BEGINNER-TO-ADVANCED GUIDE
 
 **Author:** Nzegge Charles Ngong
 
----
+# 1. Introduction to DNS Records
 
-# 1. Introduction to DNS
-
-DNS stands for **Domain Name System**.
-
-DNS is a distributed naming system that translates domain names into information computers can use to communicate, especially IP addresses.
+DNS records are entries stored in DNS zones that provide information about domain names and network services.
 
 For example:
 
 ```text
-www.example.com
+example.com.    3600    IN    A    192.0.2.10
 ```
 
-A computer needs an IP address to communicate with the server hosting that domain.
+This is a DNS record.
 
-DNS helps discover that address.
+Let's understand its structure:
 
-## Why does DNS have a hierarchy?
-
-Imagine that every DNS server in the world stored information about every domain name.
-
-That would create problems:
-
-- Maintaining all domain records in one place would be difficult.
-- DNS queries would create enormous workloads.
-- Updating domain information would become complicated.
-- There would be no practical way to distribute responsibility.
-
-DNS solves this problem using a hierarchical and distributed structure.
-
-Instead of one central server containing every domain's records, different DNS servers manage different parts of the namespace.
-
-The main hierarchy is:
-
-```text
-                  ROOT (.)
-                     |
-          +----------+----------+
-          |          |          |
-         .com       .org       .net
-          |          |          |
-       example     wikipedia   example
-          |
-      example.com
-          |
-    www.example.com
-```
-
-The DNS hierarchy is read from right to left in a domain name.
-
-For example:
-
-```text
-www.example.com.
-```
-
-- `.` is the DNS root.
-- `com` is the Top-Level Domain.
-- `example` is the Second-Level Domain.
-- `www` is a subdomain.
-
-The final dot represents the root of the DNS namespace. It is often omitted when writing domain names.
-
----
-
-# 2. The Four Main Components of DNS Resolution
-
-Before studying the hierarchy, understand these four components.
-
-| Component | Responsibility |
+| Part | Meaning |
 |---|---|
-| Stub resolver | The DNS client on your computer that sends queries to a resolver |
-| Recursive DNS resolver | Finds the answer on behalf of the client |
-| Root DNS server | Directs the resolver towards the appropriate TLD |
-| TLD DNS server | Directs the resolver towards the authoritative DNS server |
-| Authoritative DNS server | Provides the official DNS information for its zone |
+| `example.com.` | Domain name (owner name) |
+| `3600` | TTL in seconds |
+| `IN` | Internet DNS class |
+| `A` | DNS record type |
+| `192.0.2.10` | Record data (IPv4 address) |
 
-Important distinction:
+The general structure is:
 
-The recursive resolver is not the same thing as the root, TLD, or authoritative server.
+```text
+NAME    TTL    CLASS    TYPE    VALUE
+```
 
-The recursive resolver performs the lookup on behalf of your computer. The other servers provide information about the DNS namespace.
+Not every DNS tool displays all these fields in exactly this format.
 
 ---
 
-# 3. Understanding the DNS Root (.)
+# 2. A Record — Address Record
 
-The DNS root is at the very top of the DNS hierarchy.
+The A record maps a domain name or hostname to an IPv4 address.
 
-It is represented by:
-
-```text
-.
-```
-
-The root is responsible for directing DNS resolvers towards the appropriate Top-Level Domain (TLD) servers.
-
-Examples of TLDs include:
-
-```text
-.com
-.org
-.net
-.edu
-.gov
-.cm
-.uk
-```
-
-The root does not normally contain the final IP addresses for websites.
-
-Instead, it provides referrals to the relevant TLD name servers.
-
-## Root DNS servers
-
-There are 13 named root server identities.
-
-They are identified using letters A through M:
-
-```text
-a.root-servers.net
-b.root-servers.net
-c.root-servers.net
-d.root-servers.net
-e.root-servers.net
-f.root-servers.net
-g.root-servers.net
-h.root-servers.net
-i.root-servers.net
-j.root-servers.net
-k.root-servers.net
-l.root-servers.net
-m.root-servers.net
-```
-
-Important:
-
-There are 13 named identities, not merely 13 physical machines. Each identity is served by multiple instances distributed across the world using anycast.
-
-This makes the root DNS infrastructure more resilient and geographically distributed.
-
-## What does the root server do?
-
-Suppose you want to resolve:
-
-```text
-www.example.com
-```
-
-Your recursive resolver does not have the answer cached.
-
-It asks a root server:
-
-```text
-Where can I find information about www.example.com?
-```
-
-The root server identifies `.com` as the relevant TLD and provides a referral to `.com` name servers.
-
-The root server does not need to know the final IP address.
-
-It only needs to direct the resolver to the next level.
-
----
-
-# 4. Understanding TLD DNS Servers
-
-TLD means **Top-Level Domain**.
-
-A TLD is the highest-level domain immediately below the DNS root.
-
-Examples:
-
-| TLD | Category or common use |
-|---|---|
-| `.com` | Generic top-level domain |
-| `.org` | Generic top-level domain |
-| `.net` | Generic top-level domain |
-| `.edu` | Education-related |
-| `.gov` | Government-related |
-| `.cm` | Cameroon country-code TLD |
-| `.uk` | United Kingdom country-code TLD |
-| `.de` | Germany country-code TLD |
-| `.io` | Country-code TLD also widely used in technology |
-
-There are different categories of TLDs:
-
-### A. Generic Top-Level Domains (gTLDs)
-
-Examples:
-
-```text
-.com
-.org
-.net
-.info
-```
-
-### B. Country-Code Top-Level Domains (ccTLDs)
-
-These are associated with countries or territories.
-
-Examples:
-
-```text
-.cm    Cameroon
-.uk    United Kingdom
-.us    United States
-.de    Germany
-.ng    Nigeria
-```
-
-### C. Sponsored and other specialized TLDs
-
-Examples include:
-
-```text
-.edu
-.gov
-.mil
-```
-
-Their registration rules and administration differ.
-
-## What does a TLD server do?
-
-Consider:
-
-```text
-www.example.com
-```
-
-The root server has already directed the resolver to the `.com` TLD servers.
-
-The resolver asks a `.com` server:
-
-```text
-Where can I find the authoritative DNS information for example.com?
-```
-
-The TLD server returns a referral to the authoritative name servers for `example.com`.
-
-For example, an illustrative response might identify:
-
-```text
-ns1.example-dns.com
-ns2.example-dns.com
-```
-
-These names are examples, not actual DNS servers for every domain.
-
-The TLD server generally does not provide the final IP address of `www.example.com`.
-
-It tells the resolver which authoritative servers are responsible for the domain.
-
----
-
-# 5. Understanding Authoritative DNS Servers
-
-An authoritative DNS server stores or serves the official DNS records for a DNS zone.
-
-For example, the authoritative server for `example.com` may contain records such as:
-
-```text
-example.com.       A       192.0.2.10
-www.example.com.   A       192.0.2.10
-mail.example.com.  A       192.0.2.20
-example.com.       MX      10 mail.example.com.
-```
-
-These are illustrative addresses and records.
-
-## What is a DNS zone?
-
-A DNS zone is an administratively managed portion of the DNS namespace.
-
-For example:
-
-```text
-example.com
-```
-
-may be managed as one DNS zone.
-
-Its authoritative DNS servers maintain records for that zone.
-
-A domain and a DNS zone are related, but they are not always identical.
-
-For example:
-
-```text
-example.com
-```
-
-can delegate a subdomain:
-
-```text
-sales.example.com
-```
-
-The `sales.example.com` subdomain can be managed by separate authoritative name servers.
-
-That means the parent zone delegates responsibility for that subdomain to another DNS zone.
-
-## Primary and secondary authoritative servers
-
-A DNS zone may be served by multiple authoritative servers.
-
-Two common roles are:
-
-**Primary (master) server:**
-
-- Holds the primary editable copy of the zone data.
-- Zone changes are made or published through the primary DNS management process.
-
-**Secondary (slave) server:**
-
-- Obtains zone data from another authoritative server.
-- Provides authoritative answers.
-- Improves availability and redundancy.
-
-Secondary servers commonly obtain updates using DNS zone transfers.
-
-The two major transfer mechanisms are:
-
-```text
-AXFR    Full zone transfer
-IXFR    Incremental zone transfer
-```
-
-Zone transfers commonly use TCP port 53.
-
----
-
-# 6. Complete DNS Resolution Process
-
-Now connect everything.
-
-Imagine opening your browser and entering:
-
-```text
-https://www.example.com
-```
-
-Your computer needs to resolve the hostname before connecting to the web server.
-
-Assume the answer is not already cached.
-
-## Step 1: Your computer checks its DNS information
-
-Your operating system's DNS resolver checks its available cache.
-
-Other layers, such as the browser, may also maintain their own DNS cache.
-
-If a valid cached answer exists, the lookup may finish without contacting the DNS hierarchy.
-
-If no suitable answer exists, your computer sends a DNS query to its configured recursive resolver.
-
-## Step 2: The recursive resolver contacts a root server
-
-The resolver asks a root server about:
-
-```text
-www.example.com
-```
-
-The root server identifies `.com` as the relevant TLD.
-
-It returns a referral containing information about `.com` name servers.
-
-## Step 3: The resolver contacts a .com TLD server
-
-The resolver asks the `.com` server:
-
-```text
-Where are the authoritative name servers for example.com?
-```
-
-The TLD server returns a referral identifying the authoritative name servers.
-
-## Step 4: The resolver contacts the authoritative DNS server
-
-The resolver asks the authoritative server for the address record of:
-
-```text
-www.example.com
-```
-
-The authoritative server responds with the appropriate DNS record, if one exists.
-
-For example:
-
-```text
-www.example.com.    A    192.0.2.10
-```
-
-## Step 5: The recursive resolver returns the answer
-
-The recursive resolver returns the DNS answer to your computer.
-
-It may also cache the result according to its TTL.
-
-## Step 6: Your computer connects to the destination
-
-Your browser can now use the resolved IP address to connect to the web server.
-
-For HTTPS, the browser also performs the necessary TLS handshake.
-
-The DNS lookup itself does not download the website.
-
----
-
-# 7. Visualizing the Full DNS Hierarchy
-
-```text
-                    YOUR COMPUTER
-                          |
-                          |
-                  DNS QUERY REQUEST
-                          |
-                          v
-                RECURSIVE DNS RESOLVER
-                          |
-                          |
-                 Query Root DNS Server
-                          |
-                          v
-                    ROOT SERVER
-                          |
-                Referral to .com servers
-                          |
-                          v
-                   .COM TLD SERVER
-                          |
-          Referral to example.com name servers
-                          |
-                          v
-              AUTHORITATIVE DNS SERVER
-                          |
-                 A record response
-                          |
-                          v
-                192.0.2.10 (Example)
-                          |
-                          v
-               RECURSIVE DNS RESOLVER
-                          |
-                          v
-                    YOUR COMPUTER
-                          |
-                          v
-                 WEB SERVER CONNECTION
-```
-
-Remember:
-
-The arrows between the recursive resolver and the DNS hierarchy represent DNS queries and responses.
-
-Your computer usually communicates with the recursive resolver, not directly with every server in the hierarchy.
-
----
-
-# 8. Recursive Query vs Iterative Query
-
-These two terms are very important.
-
-## A. Recursive query
-
-A recursive query means the client asks a DNS resolver to obtain the final answer or return an error.
+IPv4 addresses use 32 bits.
 
 Example:
 
 ```text
-Computer → Recursive Resolver
+example.com.    IN    A    192.0.2.10
 ```
 
-Your computer asks:
+This means:
 
 ```text
-What is the IP address of www.example.com?
+example.com → 192.0.2.10
 ```
 
-It expects the resolver to do the necessary work.
+When a computer requests the IPv4 address of `example.com`, DNS can return this A record.
 
-The resolver either returns the answer or an error.
-
-## B. Iterative query
-
-An iterative query allows a DNS server to respond with the best information it has, including a referral to another DNS server.
-
-For example:
+## Example with multiple A records
 
 ```text
-Resolver → Root Server
-Resolver → TLD Server
-Resolver → Authoritative Server
+example.com.    IN    A    192.0.2.10
+example.com.    IN    A    192.0.2.20
+example.com.    IN    A    192.0.2.30
 ```
 
-The resolver follows referrals until it finds the answer.
+One hostname can have multiple A records.
 
-## Comparison
+This may be used for:
 
-| Recursive query | Iterative query |
-|---|---|
-| Client expects a final answer | Server may return a referral |
-| Resolver does the lookup work | Requester follows the referral |
-| Commonly used between computer and recursive resolver | Commonly used between recursive resolver and DNS hierarchy servers |
+- Load distribution.
+- Multiple server addresses.
+- Redundancy.
+- Different service infrastructure.
 
-Important: A recursive resolver may perform iterative queries to root, TLD, and authoritative servers while satisfying your computer's recursive request.
+The DNS resolver may return multiple addresses. The client or other infrastructure determines which address to use.
 
----
+## Query an A record
 
-# 9. Understanding DNS Caching and TTL
-
-TTL means **Time To Live**.
-
-DNS records have TTL values that determine how long a DNS answer may be cached.
-
-Example:
-
-```text
-www.example.com.  3600  IN  A  192.0.2.10
-```
-
-Here:
-
-```text
-3600 seconds = 1 hour
-```
-
-The resolver can generally cache this answer for up to one hour.
-
-Why is caching important?
-
-Without caching, DNS resolvers would repeatedly contact the DNS hierarchy for the same information.
-
-Caching helps:
-
-- Reduce DNS traffic.
-- Improve lookup speed.
-- Reduce workload on authoritative servers.
-- Improve efficiency.
-
-Important:
-
-TTL is not a guarantee that the domain will remain available for that duration. It is a caching instruction for the DNS record.
-
----
-
-# 10. Understanding DNS Records
-
-Different DNS records provide different types of information.
-
-| Record | Function |
-|---|---|
-| A | Maps a hostname to IPv4 |
-| AAAA | Maps a hostname to IPv6 |
-| CNAME | Defines an alias |
-| MX | Identifies mail servers |
-| NS | Identifies authoritative name servers |
-| TXT | Stores text information |
-| PTR | Supports reverse DNS |
-| SOA | Provides DNS zone authority information |
-| SRV | Identifies services and their connection details |
-| CAA | Specifies permitted certificate authorities |
-
-Example:
-
-```text
-example.com.      A       192.0.2.10
-example.com.      MX      10 mail.example.com.
-example.com.      NS      ns1.example.com.
-www.example.com.  CNAME   example.com.
-```
-
-A DNS server does not only resolve website IP addresses. It also provides information for email, service discovery, domain verification, and other network services.
-
----
-
-# 11. DNS Port Numbers and Transport Protocols
-
-DNS commonly uses port 53.
-
-| Protocol | Port | Usage |
-|---|---:|---|
-| UDP | 53 | Most ordinary DNS queries and responses |
-| TCP | 53 | Zone transfers and DNS responses that require TCP |
-
-Other encrypted DNS protocols include:
-
-| Technology | Common transport and port |
-|---|---|
-| DNS over TLS (DoT) | TCP 853 |
-| DNS over HTTPS (DoH) | HTTPS, commonly TCP 443 |
-| DNS over QUIC (DoQ) | UDP 853 |
-
-Traditional DNS is not encrypted by default.
-
-DNSSEC authenticates DNS data but does not encrypt the DNS query.
-
----
-
-# 12. Practical DNS Commands on Windows
-
-You can practise DNS hierarchy concepts using PowerShell or CMD.
-
-## A. nslookup
-
-Resolve a domain:
-
-```powershell
-nslookup example.com
-```
-
-Query an A record:
+Windows:
 
 ```powershell
 nslookup -type=A example.com
 ```
 
-Query an AAAA record:
-
-```powershell
-nslookup -type=AAAA example.com
-```
-
-Query MX records:
-
-```powershell
-nslookup -type=MX example.com
-```
-
-Query NS records:
-
-```powershell
-nslookup -type=NS example.com
-```
-
-Query TXT records:
-
-```powershell
-nslookup -type=TXT example.com
-```
-
-## B. Specify the DNS resolver
-
-Use Google's DNS resolver:
-
-```powershell
-nslookup example.com 8.8.8.8
-```
-
-Use Cloudflare's DNS resolver:
-
-```powershell
-nslookup example.com 1.1.1.1
-```
-
-This lets you compare responses from different recursive resolvers.
-
-## C. Resolve-DnsName
-
-PowerShell also provides:
-
-```powershell
-Resolve-DnsName example.com
-```
-
-Specific record:
+PowerShell:
 
 ```powershell
 Resolve-DnsName example.com -Type A
 ```
 
-Name servers:
-
-```powershell
-Resolve-DnsName example.com -Type NS
-```
-
-Mail servers:
-
-```powershell
-Resolve-DnsName example.com -Type MX
-```
-
-## D. Display your DNS cache
-
-```powershell
-ipconfig /displaydns
-```
-
-Clear your Windows DNS cache:
-
-```powershell
-ipconfig /flushdns
-```
-
----
-
-# 13. Understanding DNS with dig
-
-`dig` is a DNS lookup utility commonly used on Linux and other Unix-like systems.
-
-Basic lookup:
-
-```bash
-dig example.com
-```
-
-Request A record:
+Linux:
 
 ```bash
 dig example.com A
 ```
 
-Request MX record:
+---
+
+# 3. AAAA Record — IPv6 Address Record
+
+The AAAA record maps a domain name to an IPv6 address.
+
+IPv6 addresses use 128 bits.
+
+Example:
+
+```text
+example.com.    IN    AAAA    2001:db8::10
+```
+
+This means:
+
+```text
+example.com → 2001:db8::10
+```
+
+Notice the difference:
+
+| Record | Address version | Address size |
+|---|---|---:|
+| A | IPv4 | 32 bits |
+| AAAA | IPv6 | 128 bits |
+
+Why is it called AAAA?
+
+It is pronounced "quad A". It represents an IPv6 address record.
+
+## Example
+
+A domain can have both A and AAAA records:
+
+```text
+example.com.    IN    A       192.0.2.10
+
+example.com.    IN    AAAA    2001:db8::10
+```
+
+This allows clients using IPv4 or IPv6 to discover an appropriate address.
+
+## Query an AAAA record
+
+Windows:
+
+```powershell
+nslookup -type=AAAA example.com
+```
+
+PowerShell:
+
+```powershell
+Resolve-DnsName example.com -Type AAAA
+```
+
+Linux:
+
+```bash
+dig example.com AAAA
+```
+
+---
+
+# 4. CNAME Record — Canonical Name Record
+
+CNAME means **Canonical Name**.
+
+It makes one DNS name an alias of another DNS name.
+
+Example:
+
+```text
+www.example.com.    IN    CNAME    example.com.
+```
+
+This means:
+
+```text
+www.example.com → example.com
+```
+
+The CNAME does not directly store an IPv4 or IPv6 address.
+
+Instead, it tells the resolver that the queried name is an alias of another name.
+
+The resolver then looks up the target name to obtain the required address.
+
+## Example
+
+Imagine these records:
+
+```text
+example.com.       IN    A        192.0.2.10
+
+www.example.com.   IN    CNAME    example.com.
+```
+
+When someone requests:
+
+```text
+www.example.com
+```
+
+DNS follows the alias to:
+
+```text
+example.com
+```
+
+It can then obtain:
+
+```text
+192.0.2.10
+```
+
+## Important CNAME rules
+
+1. A CNAME owner name generally cannot have other ordinary DNS data records alongside it.
+2. You should not normally create an A record and a CNAME record for the same owner name.
+3. A CNAME target must be a domain name, not an IP address.
+4. A CNAME can point to another CNAME, although chains should generally be avoided because they add lookup steps.
+5. A zone apex (for example, `example.com`) normally cannot be a CNAME because it must contain required zone records such as SOA and NS.
+
+Some DNS providers offer ALIAS or ANAME features to work around the zone-apex limitation. These are provider-specific features, not standard DNS record types.
+
+## Query a CNAME record
+
+```powershell
+nslookup -type=CNAME www.example.com
+```
+
+```bash
+dig www.example.com CNAME
+```
+
+---
+
+# 5. MX Record — Mail Exchange Record
+
+MX means **Mail Exchange**.
+
+It identifies the mail servers responsible for receiving email for a domain.
+
+Suppose you send an email to:
+
+```text
+student@example.com
+```
+
+The sending mail server needs to discover where email for `example.com` should be delivered.
+
+It queries the MX records.
+
+Example:
+
+```text
+example.com.    IN    MX    10    mail.example.com.
+```
+
+Meaning:
+
+```text
+Domain: example.com
+Priority: 10
+Mail server: mail.example.com
+```
+
+## Understanding MX priority
+
+MX records use preference values.
+
+A lower number means a higher preference.
+
+Example:
+
+```text
+example.com.    IN    MX    10    mail1.example.com.
+example.com.    IN    MX    20    mail2.example.com.
+example.com.    IN    MX    30    mail3.example.com.
+```
+
+The sending mail server normally tries:
+
+1. `mail1.example.com`
+2. `mail2.example.com`
+3. `mail3.example.com`
+
+If the preferred server is unavailable, it can try a less-preferred server.
+
+## Important
+
+An MX record identifies a mail server hostname, not the mail server's IP address directly.
+
+The mail server hostname must itself be resolved using appropriate address records.
+
+## Query MX records
+
+```powershell
+nslookup -type=MX example.com
+```
+
+```powershell
+Resolve-DnsName example.com -Type MX
+```
 
 ```bash
 dig example.com MX
 ```
 
-Request NS record:
-
-```bash
-dig example.com NS
-```
-
-Request TXT record:
-
-```bash
-dig example.com TXT
-```
-
-## Trace the DNS hierarchy
-
-One particularly useful command is:
-
-```bash
-dig +trace example.com
-```
-
-This attempts to show the DNS resolution path from the root towards the authoritative servers.
-
-You can observe:
-
-1. Root server referrals.
-2. TLD server referrals.
-3. Authoritative server responses.
-
-This is one of the best practical commands for understanding the DNS hierarchy.
-
 ---
 
-# 14. DNS and Cybersecurity
+# 6. NS Record — Name Server Record
 
-DNS is an important part of network security.
+NS means **Name Server**.
 
-Understanding its hierarchy helps you understand several security issues.
+It identifies the authoritative name servers for a DNS zone.
 
-## A. DNS spoofing
-
-An attacker attempts to provide false DNS information.
-
-For example, a victim requests a legitimate domain but is given an attacker-controlled IP address.
-
-This can redirect the victim to a malicious destination.
-
-## B. DNS cache poisoning
-
-An attacker attempts to insert forged DNS information into a resolver's cache.
-
-If successful, other clients using that resolver may receive the forged answer.
-
-## C. DNS tunnelling
-
-DNS traffic can be abused to transfer information through DNS queries and responses.
-
-It can be used for command-and-control communication or data exfiltration.
-
-## D. DNS enumeration
-
-DNS enumeration involves discovering publicly available DNS records and infrastructure information.
-
-Tools include:
+Example:
 
 ```text
-nslookup
-dig
-host
-whois
+example.com.    IN    NS    ns1.example-dns.com.
+
+example.com.    IN    NS    ns2.example-dns.com.
 ```
 
-## E. DNSSEC
+This tells DNS which name servers are authoritative for the zone.
 
-DNSSEC stands for Domain Name System Security Extensions.
+## Why are NS records important?
 
-It uses digital signatures to help validate the authenticity and integrity of DNS data.
-
-DNSSEC does not encrypt DNS traffic.
-
----
-
-# 15. Important Terms to Memorize
-
-| Term | Meaning |
-|---|---|
-| DNS | Domain Name System |
-| Root | Top of the DNS hierarchy |
-| TLD | Top-Level Domain |
-| gTLD | Generic Top-Level Domain |
-| ccTLD | Country-Code Top-Level Domain |
-| Resolver | DNS component that performs name resolution |
-| Recursive resolver | Obtains the answer for a client |
-| Stub resolver | DNS client on a device |
-| Authoritative server | Provides official DNS data for a zone |
-| DNS zone | Administratively managed DNS namespace |
-| Referral | Information directing a resolver to another DNS server |
-| TTL | Time To Live |
-| FQDN | Fully Qualified Domain Name |
-| AXFR | Full DNS zone transfer |
-| IXFR | Incremental DNS zone transfer |
-| DNSSEC | DNS Security Extensions |
-
----
-
-# 16. Exercises
-
-Try answering these questions without looking at the explanations.
-
-1. What does DNS stand for?
-2. Why do computers need DNS?
-3. What is the purpose of the DNS root?
-4. How many named root server identities exist?
-5. What is a TLD?
-6. What is the difference between `.com` and `example.com`?
-7. What is the responsibility of an authoritative DNS server?
-8. What is the difference between a recursive resolver and an authoritative server?
-9. What is the difference between recursive and iterative queries?
-10. What does TTL mean?
-11. Why does DNS use caching?
-12. Which port does DNS commonly use?
-13. What is the difference between UDP and TCP in DNS?
-14. What is DNSSEC?
-15. What does `dig +trace example.com` do?
-
-## Practical exercises
-
-Run these commands and examine their output:
-
-```powershell
-nslookup google.com
-nslookup -type=A google.com
-nslookup -type=AAAA google.com
-nslookup -type=MX google.com
-nslookup -type=NS google.com
-nslookup google.com 8.8.8.8
-ipconfig /displaydns
-```
-
-If you have `dig` installed:
-
-```bash
-dig google.com
-dig google.com NS
-dig google.com MX
-dig +trace google.com
-```
-
----
-
-# 17. Final Summary
-
-The DNS hierarchy is a distributed system that divides responsibility for domain names among different levels.
-
-Remember this order:
+Remember the DNS hierarchy:
 
 ```text
 ROOT
   |
   v
-TLD
+.COM TLD
   |
   v
-AUTHORITATIVE DNS SERVER
-  |
-  v
-DNS RECORD / ANSWER
+EXAMPLE.COM AUTHORITATIVE SERVERS
 ```
 
-And remember the role of the recursive resolver:
+The `.com` registry maintains delegation information identifying the authoritative name servers for `example.com`.
+
+The authoritative zone also contains its own NS records.
+
+This is how DNS resolvers discover where to ask for authoritative information.
+
+## Query NS records
+
+```powershell
+nslookup -type=NS example.com
+```
+
+```powershell
+Resolve-DnsName example.com -Type NS
+```
+
+```bash
+dig example.com NS
+```
+
+---
+
+# 7. TXT Record — Text Record
+
+TXT records store text associated with a domain.
+
+They are widely used for domain verification and email security policies.
+
+Example:
 
 ```text
-YOUR COMPUTER
-      |
-      v
-RECURSIVE DNS RESOLVER
-      |
-      +----> ROOT
-      |
-      +----> TLD
-      |
-      +----> AUTHORITATIVE SERVER
-      |
-      v
-FINAL DNS ANSWER
-      |
-      v
-YOUR COMPUTER
+example.com.    IN    TXT    "some verification value"
 ```
 
-The most important concept is that **DNS is hierarchical and distributed**.
+The content is a text string. The meaning depends on the application using it.
 
-No single DNS server needs to maintain every domain's information. Each level helps the resolver discover the next level until the appropriate authoritative information is found.
+## Common uses of TXT records
 
-Once you understand this hierarchy, learning DNS enumeration, DNS troubleshooting, DNS packet analysis, and DNS security becomes much easier.
+### A. SPF
+
+SPF means Sender Policy Framework.
+
+It specifies which mail servers are authorized to send email for a domain.
+
+Example:
+
+```text
+example.com. IN TXT "v=spf1 ip4:192.0.2.10 -all"
+```
+
+Understanding the example:
+
+- `v=spf1`: SPF version.
+- `ip4:192.0.2.10`: Authorizes the specified IPv4 address.
+- `-all`: Indicates that other sources should fail the SPF policy.
+
+This is an illustrative policy, not a recommended configuration for an actual domain without understanding its mail infrastructure.
+
+### B. DKIM
+
+DKIM means DomainKeys Identified Mail.
+
+It uses cryptographic signatures to help receiving mail servers verify that an email was authorized by the sending domain and that signed message content has not been altered.
+
+A public DKIM key is published in DNS, commonly using a TXT record.
+
+Example owner name:
+
+```text
+selector1._domainkey.example.com
+```
+
+### C. Domain verification
+
+Services may ask you to create a TXT record to prove you control a domain.
+
+Example:
+
+```text
+example.com. IN TXT "service-verification=abc123"
+```
+
+The service checks whether the expected value exists.
+
+## Query TXT records
+
+```powershell
+nslookup -type=TXT example.com
+```
+
+```bash
+dig example.com TXT
+```
+
+---
+
+# 8. PTR Record — Pointer Record
+
+PTR records are used for reverse DNS lookups.
+
+Ordinary DNS resolution:
+
+```text
+Domain name → IP address
+```
+
+Reverse DNS:
+
+```text
+IP address → Domain name
+```
+
+Example:
+
+```text
+8.8.8.8 → dns.google
+```
+
+A PTR record stores the reverse mapping.
+
+## How does reverse DNS work?
+
+For IPv4, DNS uses a special domain:
+
+```text
+in-addr.arpa
+```
+
+The IPv4 address is reversed.
+
+For example:
+
+```text
+8.8.8.8
+```
+
+Becomes:
+
+```text
+8.8.8.8.in-addr.arpa
+```
+
+For a real PTR query, the address is represented by the reversed octets:
+
+```text
+8.8.8.8
+```
+
+Example DNS owner name:
+
+```text
+8.8.8.8.in-addr.arpa.
+```
+
+A PTR record might look like:
+
+```text
+8.8.8.8.in-addr.arpa. IN PTR dns.google.
+```
+
+## IPv6 reverse DNS
+
+IPv6 reverse DNS uses:
+
+```text
+ip6.arpa
+```
+
+It reverses individual hexadecimal nibbles of the IPv6 address.
+
+## Why is PTR useful?
+
+- Mail-server reputation and reverse DNS checks.
+- Network troubleshooting.
+- Identifying hostnames associated with IP addresses.
+- Network administration.
+
+Important: A PTR record does not prove ownership or guarantee that the hostname is the original website domain.
+
+## Query PTR records
+
+```powershell
+nslookup 8.8.8.8
+```
+
+```bash
+dig -x 8.8.8.8
+```
+
+---
+
+# 9. SOA Record — Start of Authority
+
+SOA means **Start of Authority**.
+
+Every DNS zone has an SOA record.
+
+It provides important administrative information about the zone.
+
+Example:
+
+```text
+example.com. IN SOA ns1.example.com. admin.example.com. (
+    2026110401
+    3600
+    1800
+    1209600
+    300
+)
+```
+
+Let's understand the fields.
+
+| Field | Example | Meaning |
+|---|---:|---|
+| MNAME | ns1.example.com. | Primary source name server |
+| RNAME | admin.example.com. | Responsible party's email represented in DNS format |
+| SERIAL | 2026110401 | Zone version number |
+| REFRESH | 3600 | How often a secondary checks for updates |
+| RETRY | 1800 | How long to wait before retrying a failed check |
+| EXPIRE | 1209600 | How long secondary data may remain valid without successful refresh |
+| MINIMUM | 300 | Negative caching TTL in modern SOA usage |
+
+The RNAME field represents an email address.
+
+For example:
+
+```text
+admin.example.com.
+```
+
+represents:
+
+```text
+admin@example.com
+```
+
+The first dot represents the `@` separator.
+
+## Understanding the SERIAL
+
+The serial number helps secondary DNS servers identify whether the zone has changed.
+
+Example:
+
+```text
+2026110401
+```
+
+An administrator might use a date-based numbering convention.
+
+The serial must be updated appropriately when zone data changes.
+
+## Query SOA
+
+```powershell
+nslookup -type=SOA example.com
+```
+
+```bash
+dig example.com SOA
+```
+
+---
+
+# 10. SRV Record — Service Record
+
+SRV records identify the hostname and port where a particular service can be found.
+
+Example:
+
+```text
+_service._tcp.example.com. IN SRV 10 5 443 server.example.com.
+```
+
+The fields are:
+
+```text
+PRIORITY WEIGHT PORT TARGET
+```
+
+Understanding the example:
+
+| Field | Value | Meaning |
+|---|---:|---|
+| Priority | 10 | Lower value is preferred |
+| Weight | 5 | Helps distribute connections among equal-priority targets |
+| Port | 443 | Service port |
+| Target | server.example.com | Hostname providing the service |
+
+The owner name includes:
+
+```text
+_service._tcp
+```
+
+This identifies the service and transport protocol.
+
+For example:
+
+```text
+_sip._tcp.example.com
+```
+
+could identify a SIP service using TCP.
+
+Common SRV record use cases include:
+
+- VoIP services.
+- Microsoft Active Directory.
+- Service discovery.
+- Messaging systems.
+
+## Query SRV records
+
+```powershell
+nslookup -type=SRV _sip._tcp.example.com
+```
+
+```bash
+dig _sip._tcp.example.com SRV
+```
+
+---
+
+# 11. CAA Record — Certification Authority Authorization
+
+CAA records specify which certificate authorities are permitted to issue TLS certificates for a domain.
+
+Example:
+
+```text
+example.com. IN CAA 0 issue "letsencrypt.org"
+```
+
+This indicates that Let's Encrypt is authorized to issue certificates for the domain under the applicable CAA policy.
+
+Common CAA tags:
+
+| Tag | Purpose |
+|---|---|
+| issue | Authorizes a CA to issue normal certificates |
+| issuewild | Authorizes a CA to issue wildcard certificates |
+| iodef | Specifies a reporting destination for policy violations |
+
+Example:
+
+```text
+example.com. IN CAA 0 issue "letsencrypt.org"
+example.com. IN CAA 0 issuewild ";"
+```
+
+The second record indicates that wildcard certificate issuance is not authorized through that policy.
+
+CAA helps reduce the risk of unauthorized certificate issuance.
+
+## Query CAA records
+
+```powershell
+nslookup -type=CAA example.com
+```
+
+```bash
+dig example.com CAA
+```
+
+---
+
+# 12. NAPTR Record — Naming Authority Pointer
+
+NAPTR records are used to rewrite or transform domain names into information about services.
+
+They are particularly useful in service discovery and communication systems.
+
+They can be used with:
+
+- SIP.
+- ENUM.
+- VoIP systems.
+- Service discovery.
+
+Example:
+
+```text
+example.com. IN NAPTR 100 10 "U" "E2U+sip" "!^.*$!sip:user@example.com!" .
+```
+
+NAPTR fields include:
+
+```text
+ORDER PREFERENCE FLAGS SERVICE REGEXP REPLACEMENT
+```
+
+The regular expression can describe how to transform a name into another identifier.
+
+NAPTR is more specialized than A, AAAA, MX, or CNAME.
+
+---
+
+# 13. DNSSEC-Related Records
+
+DNSSEC adds cryptographic validation to DNS data.
+
+Several DNS record types support DNSSEC.
+
+## A. DNSKEY
+
+Contains public keys used for DNSSEC validation.
+
+Example:
+
+```text
+example.com. IN DNSKEY ...
+```
+
+## B. RRSIG
+
+Contains a digital signature associated with a DNS record set.
+
+It helps a resolver verify that the data is authentic and has not been modified.
+
+## C. DS
+
+Delegation Signer.
+
+It stores a digest of a child zone's DNSKEY information in the parent zone.
+
+This helps establish the chain of trust between DNS zones.
+
+## D. NSEC
+
+Provides authenticated information about the next existing name in a DNS zone and helps prove that a queried name or record does not exist.
+
+## E. NSEC3
+
+Provides a hashed form of authenticated denial-of-existence information.
+
+It reduces some of the information exposure associated with ordinary NSEC, although it does not make zone enumeration impossible in all cases.
+
+## F. CDS and CDNSKEY
+
+These records support automated DNSSEC delegation maintenance.
+
+---
+
+# 14. Other DNS Record Types Worth Knowing
+
+| Record | Purpose |
+|---|---|
+| TLSA | Associates TLS certificate information with a service using DANE |
+| SSHFP | Publishes SSH public-key fingerprints |
+| LOC | Stores geographic location information |
+| HINFO | Stores host information, such as hardware and operating system descriptions |
+| RP | Identifies the responsible person and mailbox for a domain or host |
+| CERT | Stores certificate-related information |
+| URI | Associates a domain name with a URI and priority/weight |
+| SVCB | Provides service binding information |
+| HTTPS | Provides HTTPS service binding information |
+
+SVCB and HTTPS records are useful in modern service discovery and web connection optimization.
+
+The HTTPS record type is not the same thing as the HTTPS protocol itself.
+
+---
+
+# 15. Complete DNS Record Comparison
+
+| Record | Main purpose | Example data |
+|---|---|---|
+| A | IPv4 address | `192.0.2.10` |
+| AAAA | IPv6 address | `2001:db8::10` |
+| CNAME | Alias | `example.com.` |
+| MX | Mail server | `10 mail.example.com.` |
+| NS | Name server | `ns1.example.com.` |
+| TXT | Text data | `"verification=abc123"` |
+| PTR | Reverse DNS | `dns.google.` |
+| SOA | Zone authority | Serial, timers and administrator |
+| SRV | Service location | Priority, weight, port and target |
+| CAA | Certificate issuance policy | `issue "letsencrypt.org"` |
+| NAPTR | Name/service rewriting | Order, flags, service and rules |
+| DNSKEY | DNSSEC public key | Public key data |
+| RRSIG | DNSSEC signature | Digital signature |
+| DS | DNSSEC delegation | Key digest |
+| NSEC | Authenticated denial | Next existing name |
+| NSEC3 | Hashed denial | Hashed name information |
+| TLSA | DANE TLS association | Certificate association data |
+| SSHFP | SSH fingerprint | Algorithm and fingerprint |
+| SVCB | Service binding | Service parameters |
+| HTTPS | HTTPS service binding | HTTPS parameters |
+
+---
+
+# 16. Practical DNS Record Exercises
+
+Use these commands on Windows.
+
+### A record
+
+```powershell
+nslookup -type=A google.com
+```
+
+### AAAA record
+
+```powershell
+nslookup -type=AAAA google.com
+```
+
+### MX record
+
+```powershell
+nslookup -type=MX gmail.com
+```
+
+### NS record
+
+```powershell
+nslookup -type=NS google.com
+```
+
+### TXT record
+
+```powershell
+nslookup -type=TXT google.com
+```
+
+### CNAME record
+
+```powershell
+nslookup -type=CNAME www.example.com
+```
+
+The domain may not have a CNAME at that exact hostname. A failed lookup does not mean DNS is broken.
+
+### SOA record
+
+```powershell
+nslookup -type=SOA google.com
+```
+
+### SRV record
+
+```powershell
+nslookup -type=SRV _sip._tcp.example.com
+```
+
+### CAA record
+
+```powershell
+nslookup -type=CAA google.com
+```
+
+For more complete record-type support, use `dig`:
+
+```bash
+dig google.com A
+dig google.com AAAA
+dig google.com MX
+dig google.com NS
+dig google.com TXT
+dig google.com SOA
+dig google.com CAA
+```
+
+---
+
+# 17. Important Differences to Remember
+
+## A vs AAAA
+
+- A returns an IPv4 address.
+- AAAA returns an IPv6 address.
+
+## CNAME vs A
+
+- A stores an IPv4 address.
+- CNAME points to another DNS name.
+
+## MX vs NS
+
+- MX identifies mail servers.
+- NS identifies authoritative name servers.
+
+## TXT vs SOA
+
+- TXT stores text data for different applications.
+- SOA stores important zone administration information.
+
+## PTR vs A
+
+- A maps a name to an IPv4 address.
+- PTR maps an IP address to a name.
+
+## NS vs SOA
+
+- NS identifies authoritative name servers.
+- SOA identifies important information about the DNS zone and its administration.
+
+---
+
+# 18. Final Learning Advice
+
+Learn the following records first because you will encounter them frequently:
+
+1. A
+2. AAAA
+3. CNAME
+4. MX
+5. NS
+6. TXT
+7. PTR
+8. SOA
+9. SRV
+10. CAA
+
+After understanding these, move to DNSSEC-related records such as DNSKEY, RRSIG, DS, NSEC, and NSEC3.
+
+Remember:
+
+**DNS records are not all designed to translate domain names into IP addresses. They provide many different kinds of information that make domain names, email, service discovery, and DNS security work.**
