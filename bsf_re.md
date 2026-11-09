@@ -730,4 +730,1115 @@ for row in rows:
 Extract all table headings:
 
 ```python
-head
+headings = soup.find_all("th")
+
+for heading in headings:
+    print(heading.get_text(strip=True))
+```
+
+Extract all table data cells:
+
+```python
+cells = soup.find_all("td")
+
+for cell in cells:
+    print(cell.get_text(strip=True))
+```
+
+Extract both headings and data cells:
+
+```python
+elements = soup.find_all(["th", "td"])
+
+for element in elements:
+    print(element.get_text(strip=True))
+```
+
+The list:
+
+```python
+["th", "td"]
+```
+
+means find either of these HTML tags.
+
+### Extracting each row into a list
+
+```python
+for row in soup.find_all("tr"):
+
+    values = [
+        cell.get_text(strip=True)
+        for cell in row.find_all(["th", "td"])
+    ]
+
+    print(values)
+```
+
+Output:
+
+```text
+['Username', 'Role']
+['admin', 'Administrator']
+['john', 'Customer']
+```
+
+This technique is useful when extracting structured table information.
+
+---
+
+# 11. Checking Whether an Element Exists
+
+Never assume an element exists.
+
+Incorrect:
+
+```python
+version = soup.find("th").get_text(strip=True)
+```
+
+If `find("th")` returns `None`, this causes:
+
+```text
+AttributeError: 'NoneType' object has no attribute 'get_text'
+```
+
+Correct:
+
+```python
+element = soup.find("th")
+
+if element is not None:
+    version = element.get_text(strip=True)
+    print(version)
+else:
+    print("Element not found")
+```
+
+You can also use:
+
+```python
+element = soup.find("th")
+
+if element:
+    print(element.get_text(strip=True))
+```
+
+The explicit `is not None` check is clearer when you specifically want to check whether an element was found.
+
+---
+
+# 12. Useful BeautifulSoup Properties and Methods
+
+## Properties
+
+| Property | Purpose |
+|---|---|
+| `.name` | Tag name |
+| `.attrs` | All attributes |
+| `.parent` | Parent element |
+| `.contents` | Direct children as a list |
+| `.children` | Iterator over direct children |
+| `.descendants` | Iterator over nested descendants |
+| `.strings` | Text nodes |
+| `.stripped_strings` | Text nodes without surrounding whitespace |
+| `.text` | Text contained in the element |
+| `.next_sibling` | Next sibling node |
+| `.previous_sibling` | Previous sibling node |
+
+## Methods
+
+| Method | Purpose |
+|---|---|
+| `find()` | Finds first matching element |
+| `find_all()` | Finds all matching elements |
+| `select_one()` | First CSS selector match |
+| `select()` | All CSS selector matches |
+| `get()` | Retrieves an attribute |
+| `get_text()` | Extracts text |
+| `prettify()` | Formats HTML for readability |
+| `decode()` | Returns HTML representation |
+| `encode()` | Encodes the HTML representation |
+| `has_attr()` | Checks whether an attribute exists |
+| `get_attribute_list()` | Gets attribute values as a list |
+| `find_parent()` | Finds a matching ancestor |
+| `find_next()` | Finds a subsequent matching element |
+| `find_previous()` | Finds a previous matching element |
+| `find_next_sibling()` | Finds a matching next sibling |
+| `find_previous_sibling()` | Finds a matching previous sibling |
+
+### Inspecting HTML
+
+When you don't understand the returned structure:
+
+```python
+print(soup.prettify())
+```
+
+Inspect the tag name:
+
+```python
+print(element.name)
+```
+
+Inspect its attributes:
+
+```python
+print(element.attrs)
+```
+
+Inspect its text:
+
+```python
+print(element.get_text(strip=True))
+```
+
+---
+
+# 13. Combining Requests with BeautifulSoup
+
+BeautifulSoup does not download web pages by itself.
+
+You can use Requests to retrieve a page and BeautifulSoup to parse its HTML.
+
+```python
+import requests
+from bs4 import BeautifulSoup
+
+url = "https://example.com"
+
+try:
+    response = requests.get(url, timeout=(10, 30))
+
+    response.raise_for_status()
+
+except requests.exceptions.RequestException as error:
+    print("Request failed:", error)
+
+else:
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    title = soup.find("title")
+
+    if title:
+        print(title.get_text(strip=True))
+```
+
+Understand the responsibilities:
+
+| Library | Responsibility |
+|---|---|
+| Requests | HTTP communication |
+| BeautifulSoup | HTML parsing and extraction |
+| Regex | Pattern matching within text |
+
+Important: BeautifulSoup parses the HTML it receives. It does not execute JavaScript. If the page generates its content dynamically, the HTML returned by Requests might not contain that content.
+
+---
+
+# 14. Best Practices for BeautifulSoup
+
+1. Use `find()` when you need one element.
+2. Use `find_all()` when you need multiple elements.
+3. Use CSS selectors for complex HTML structures.
+4. Prefer `get_text(strip=True)` for clean text.
+5. Use `.get()` when accessing optional attributes.
+6. Check whether an element exists before accessing its methods.
+7. Inspect `soup.prettify()` when extraction fails.
+8. Avoid assuming the first table row contains the information you need.
+9. Keep HTML parsing separate from HTTP requests.
+10. Use the actual HTML structure to determine what you extract.
+
+---
+
+# PART 2: REGULAR EXPRESSIONS (REGEX)
+
+# 15. Introduction to Regex
+
+Regular Expressions are patterns used to search, match, validate, and extract text.
+
+Python provides the `re` module.
+
+```python
+import re
+```
+
+Regex is useful for extracting:
+
+- IP addresses.
+- Email addresses.
+- URLs.
+- Version numbers.
+- Usernames.
+- Dates.
+- Phone numbers.
+- File extensions.
+- Specific patterns inside HTML text.
+
+Example:
+
+```python
+text = "My database version is 8.0.42"
+
+match = re.search(r"\d+", text)
+
+if match:
+    print(match.group())
+```
+
+Output:
+
+```text
+8
+```
+
+Why?
+
+Because `\d+` matches one or more digits, and `re.search()` returns the first matching sequence.
+
+---
+
+# 16. Understanding Python Raw Strings
+
+You will frequently see Regex written like this:
+
+```python
+r"\d+\.\d+"
+```
+
+The `r` means raw string.
+
+Raw strings are useful because Regex uses backslashes extensively.
+
+Compare:
+
+```python
+"\d+"
+r"\d+"
+```
+
+Prefer:
+
+```python
+r"\d+"
+```
+
+This makes it easier to write and understand Regex patterns without Python interpreting many backslashes as string escapes.
+
+---
+
+# 17. Important Regex Special Characters
+
+| Character | Meaning |
+|---|---|
+| `.` | Any character except newline by default |
+| `^` | Beginning of string or line |
+| `$` | End of string or line |
+| `*` | Zero or more repetitions |
+| `+` | One or more repetitions |
+| `?` | Zero or one repetition |
+| `{n}` | Exactly n repetitions |
+| `{n,m}` | Between n and m repetitions |
+| `[]` | Character set |
+| `()` | Capturing group |
+| `(?:...)` | Non-capturing group |
+| `|` | OR |
+| `\` | Escape character |
+| `\b` | Word boundary |
+
+Examples:
+
+```python
+r"\d+"        # One or more digits
+r"\d{3}"      # Exactly three digits
+r"\d{2,4}"    # Between two and four digits
+r"ab*"        # a followed by zero or more b characters
+r"ab+"        # a followed by one or more b characters
+r"colou?r"    # color or colour
+r"cat|dog"    # cat OR dog
+r"^Python"    # Starts with Python
+r"Python$"    # Ends with Python
+```
+
+---
+
+# 18. Character Classes
+
+Character classes define which characters are allowed.
+
+| Pattern | Meaning |
+|---|---|
+| `\d` | Digit: 0–9 |
+| `\D` | Non-digit |
+| `\w` | Word character: letters, digits, underscore |
+| `\W` | Non-word character |
+| `\s` | Whitespace |
+| `\S` | Non-whitespace |
+| `[abc]` | a, b, or c |
+| `[a-z]` | Lowercase letters |
+| `[A-Z]` | Uppercase letters |
+| `[0-9]` | Digits |
+| `[^abc]` | Anything except a, b, or c |
+
+Examples:
+
+```python
+r"\d+"          # 12345
+r"\w+"          # Python_123
+r"[A-Z]+"       # PYTHON
+r"[a-z]+"       # python
+r"[A-Za-z]+"    # Python
+r"[^0-9]+"      # Characters that are not digits
+```
+
+---
+
+# 19. Important Regex Functions
+
+Python's `re` module provides several useful functions.
+
+## 19.1 re.search()
+
+Searches anywhere in a string and returns the first match.
+
+```python
+text = "Database version: 8.0.42"
+
+match = re.search(r"\d+\.\d+\.\d+", text)
+
+if match:
+    print(match.group())
+```
+
+Output:
+
+```text
+8.0.42
+```
+
+## 19.2 re.match()
+
+Checks for a match at the beginning of the string.
+
+```python
+text = "8.0.42 MySQL"
+
+match = re.match(r"\d+\.\d+\.\d+", text)
+
+if match:
+    print(match.group())
+```
+
+Output:
+
+```text
+8.0.42
+```
+
+If the string begins with another character, it won't match.
+
+## 19.3 re.fullmatch()
+
+Requires the entire string to match.
+
+```python
+version = "8.0.42"
+
+match = re.fullmatch(r"\d+\.\d+\.\d+", version)
+
+if match:
+    print("Valid version format")
+```
+
+## 19.4 re.findall()
+
+Returns all matches as a list.
+
+```python
+text = "Versions: 8.0.42, 10.4.2, 9.1.5"
+
+versions = re.findall(r"\d+\.\d+\.\d+", text)
+
+print(versions)
+```
+
+Output:
+
+```text
+['8.0.42', '10.4.2', '9.1.5']
+```
+
+## 19.5 re.finditer()
+
+Returns an iterator containing match objects.
+
+```python
+text = "Versions: 8.0.42, 10.4.2"
+
+for match in re.finditer(r"\d+\.\d+\.\d+", text):
+    print(match.group())
+    print(match.start())
+    print(match.end())
+```
+
+Useful when you need the positions of matches.
+
+## 19.6 re.sub()
+
+Replaces matching text.
+
+```python
+text = "My phone number is 123456789"
+
+result = re.sub(r"\d", "*", text)
+
+print(result)
+```
+
+Output:
+
+```text
+My phone number is *********
+```
+
+## 19.7 re.split()
+
+Splits text using a Regex pattern.
+
+```python
+text = "Python,Django;Flask PostgreSQL"
+
+result = re.split(r"[,;\s]+", text)
+
+print(result)
+```
+
+Output:
+
+```text
+['Python', 'Django', 'Flask', 'PostgreSQL']
+```
+
+---
+
+# 20. Understanding Match Objects
+
+Functions like `search()`, `match()`, and `fullmatch()` return a match object when successful.
+
+Example:
+
+```python
+text = "Version: 8.0.42"
+
+match = re.search(r"\d+\.\d+\.\d+", text)
+```
+
+Useful match object methods:
+
+| Method | Purpose |
+|---|---|
+| `.group()` | Returns the complete match |
+| `.group(0)` | Returns the complete match |
+| `.group(1)` | Returns the first capturing group |
+| `.groups()` | Returns all captured groups |
+| `.start()` | Starting position |
+| `.end()` | Ending position |
+| `.span()` | Starting and ending positions |
+
+Example:
+
+```python
+text = "Version: 8.0.42"
+
+match = re.search(r"(\d+)\.(\d+)\.(\d+)", text)
+
+if match:
+    print(match.group(0))
+    print(match.group(1))
+    print(match.group(2))
+    print(match.group(3))
+    print(match.groups())
+```
+
+Output:
+
+```text
+8.0.42
+8
+0
+42
+('8', '0', '42')
+```
+
+The parentheses create capturing groups.
+
+---
+
+# 21. Regex Flags
+
+Flags modify how a Regex pattern behaves.
+
+| Flag | Meaning |
+|---|---|
+| `re.IGNORECASE` or `re.I` | Ignore uppercase/lowercase differences |
+| `re.MULTILINE` or `re.M` | Make `^` and `$` work per line |
+| `re.DOTALL` or `re.S` | Make `.` match newline characters |
+| `re.VERBOSE` or `re.X` | Allow readable, commented Regex patterns |
+| `re.ASCII` or `re.A` | Restrict certain character classes to ASCII |
+
+Example:
+
+```python
+text = "PYTHON is powerful"
+
+match = re.search(r"python", text, re.IGNORECASE)
+
+if match:
+    print(match.group())
+```
+
+Output:
+
+```text
+PYTHON
+```
+
+### Using re.VERBOSE
+
+Useful for longer patterns:
+
+```python
+pattern = re.compile(
+    r"""
+    \d+       # One or more digits
+    \.        # Literal dot
+    \d+       # One or more digits
+    \.        # Literal dot
+    \d+       # One or more digits
+    """,
+    re.VERBOSE
+)
+```
+
+---
+
+# 22. Working with Groups
+
+Groups allow you to extract specific sections of a match.
+
+Example:
+
+```python
+text = "Username: admin, Role: administrator"
+
+pattern = r"Username:\s*(\w+),\s*Role:\s*(\w+)"
+
+match = re.search(pattern, text)
+
+if match:
+    username = match.group(1)
+    role = match.group(2)
+
+    print(username)
+    print(role)
+```
+
+Output:
+
+```text
+admin
+administrator
+```
+
+### Named groups
+
+Named groups make patterns easier to understand.
+
+```python
+pattern = (
+    r"Username:\s*(?P<username>\w+), "
+    r"Role:\s*(?P<role>\w+)"
+)
+
+match = re.search(pattern, text)
+
+if match:
+    print(match.group("username"))
+    print(match.group("role"))
+```
+
+---
+
+# PART 3: COMBINING BEAUTIFULSOUP AND REGEX
+
+# 23. Why Combine BS4 and Regex?
+
+BeautifulSoup understands HTML structure.
+
+Regex understands text patterns.
+
+They solve different problems.
+
+Imagine this HTML:
+
+```html
+<table>
+    <tr>
+        <th>Database version</th>
+    </tr>
+
+    <tr>
+        <th>8.0.42-0ubuntu0.20.04.1</th>
+    </tr>
+</table>
+```
+
+You want to extract the version.
+
+Step 1: BeautifulSoup finds the HTML element.
+
+Step 2: BeautifulSoup extracts its text.
+
+Step 3: Regex searches for the version format.
+
+## Example 1: Extracting a version
+
+```python
+import re
+from bs4 import BeautifulSoup
+
+html = """
+<table>
+    <tr>
+        <th>Database version</th>
+    </tr>
+
+    <tr>
+        <th>8.0.42-0ubuntu0.20.04.1</th>
+    </tr>
+</table>
+"""
+
+soup = BeautifulSoup(html, "html.parser")
+
+pattern = re.compile(
+    r"\b\d+(?:\.\d+)+(?:-[\w.]+)?"
+)
+
+for element in soup.find_all(["th", "td"]):
+
+    text = element.get_text(strip=True)
+
+    match = pattern.search(text)
+
+    if match:
+        print(match.group())
+```
+
+Output:
+
+```text
+8.0.42-0ubuntu0.20.04.1
+```
+
+### Understanding the pattern
+
+```python
+r"\b\d+(?:\.\d+)+(?:-[\w.]+)?"
+```
+
+| Pattern | Meaning |
+|---|---|
+| `\b` | Word boundary |
+| `\d+` | One or more digits |
+| `(?:...)` | Non-capturing group |
+| `\.` | Literal dot |
+| `+` | One or more repetitions |
+| `(?:-[\w.]+)?` | Optional hyphen followed by letters, digits, underscores, or dots |
+
+This pattern matches:
+
+```text
+8.0.42
+8.0.42-0ubuntu0.20.04.1
+10.4.2
+```
+
+It is a practical version-shaped pattern, not a universal validator for every software version scheme.
+
+## Example 2: Extracting email addresses
+
+HTML:
+
+```html
+<div class="users">
+    <p>admin@example.com</p>
+    <p>john@example.org</p>
+</div>
+```
+
+Python:
+
+```python
+soup = BeautifulSoup(html, "html.parser")
+
+pattern = re.compile(
+    r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}"
+)
+
+for paragraph in soup.find_all("p"):
+
+    text = paragraph.get_text(strip=True)
+
+    emails = pattern.findall(text)
+
+    for email in emails:
+        print(email)
+```
+
+## Example 3: Extracting IP addresses
+
+HTML:
+
+```html
+<p>Server IP: 192.168.1.100</p>
+```
+
+Python:
+
+```python
+pattern = re.compile(
+    r"\b(?:\d{1,3}\.){3}\d{1,3}\b"
+)
+```
+
+Important: This pattern finds IPv4-shaped strings but does not validate that every octet is between 0 and 255. Use Python's `ipaddress` module for proper validation.
+
+## Example 4: Extracting usernames and values from table cells
+
+HTML:
+
+```html
+<table>
+    <tr>
+        <th>admin*administrator</th>
+    </tr>
+
+    <tr>
+        <th>john*customer</th>
+    </tr>
+</table>
+```
+
+Python:
+
+```python
+for element in soup.find_all("th"):
+
+    value = element.get_text(strip=True)
+
+    if "*" in value:
+
+        username, separator, role = value.partition("*")
+
+        if separator:
+            print("Username:", username)
+            print("Role:", role)
+```
+
+Notice that we don't need Regex here.
+
+Sometimes a normal string method like `partition()` is simpler and more efficient.
+
+---
+
+# PART 4: BEST PRACTICES AND LEARNING APPROACH
+
+## 24. When Should You Use BS4, Regex, or Both?
+
+| Situation | Recommended tool |
+|---|---|
+| Find an HTML heading | BeautifulSoup |
+| Extract a link | BeautifulSoup |
+| Extract an image source | BeautifulSoup |
+| Find all table rows | BeautifulSoup |
+| Extract an IP address from text | Regex |
+| Find a version number in text | Regex |
+| Extract usernames from HTML table cells | Both |
+| Extract emails from HTML paragraphs | Both |
+| Validate an IPv4 address | `ipaddress` |
+| Split a string by delimiters | `str.split()` or Regex |
+
+### Important principle
+
+Do not use Regex to parse an entire HTML document when BeautifulSoup can understand its structure.
+
+Instead:
+
+```text
+HTML document
+     |
+     v
+BeautifulSoup
+     |
+     v
+Find relevant HTML element
+     |
+     v
+Extract text
+     |
+     v
+Regex or normal Python string methods
+     |
+     v
+Final result
+```
+
+## 25. Common Mistakes
+
+### Mistake 1: Calling a method on None
+
+Incorrect:
+
+```python
+version = soup.find("th").get_text(strip=True)
+```
+
+Correct:
+
+```python
+element = soup.find("th")
+
+if element is not None:
+    version = element.get_text(strip=True)
+```
+
+### Mistake 2: Confusing find() and find_all()
+
+Incorrect:
+
+```python
+elements = soup.find_all("th")
+
+print(elements.get_text())
+```
+
+`find_all()` returns a collection, not one element.
+
+Correct:
+
+```python
+for element in elements:
+    print(element.get_text(strip=True))
+```
+
+### Mistake 3: Using the wrong Regex escaping
+
+Incorrect:
+
+```python
+r"\d+\\.\d+"
+```
+
+Correct:
+
+```python
+r"\d+\.\d+"
+```
+
+### Mistake 4: Forgetting that search() returns a match object
+
+```python
+match = re.search(r"\d+", "Version 123")
+```
+
+To get the matched text:
+
+```python
+print(match.group())
+```
+
+### Mistake 5: Assuming every HTML page contains the expected element
+
+Always inspect:
+
+```python
+print(soup.prettify())
+```
+
+and:
+
+```python
+print(response.status_code)
+```
+
+---
+
+# PART 5: PRACTICAL EXERCISES
+
+## Exercise 1: BeautifulSoup Fundamentals
+
+Given:
+
+```html
+<div class="container">
+    <h1>Cybersecurity</h1>
+
+    <p id="description">Learning ethical hacking</p>
+
+    <a href="https://example.com">Visit</a>
+
+    <ul>
+        <li>Python</li>
+        <li>Networking</li>
+        <li>Security</li>
+    </ul>
+</div>
+```
+
+Tasks:
+
+1. Extract the h1 heading.
+2. Extract the paragraph.
+3. Extract its ID.
+4. Extract the link URL.
+5. Extract all list items.
+6. Extract all text inside the container.
+7. Find the container using its class.
+
+## Exercise 2: Table Extraction
+
+Given:
+
+```html
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Age</th>
+    </tr>
+
+    <tr>
+        <td>John</td>
+        <td>25</td>
+    </tr>
+
+    <tr>
+        <td>Mary</td>
+        <td>30</td>
+    </tr>
+</table>
+```
+
+Tasks:
+
+1. Extract all rows.
+2. Extract all headings.
+3. Extract all data cells.
+4. Extract the names only.
+5. Extract the ages only.
+6. Put each row into a Python list.
+
+## Exercise 3: Regex Fundamentals
+
+Write patterns to extract:
+
+1. All numbers from a string.
+2. All words from a string.
+3. All uppercase letters.
+4. All lowercase letters.
+5. A version such as `8.0.42`.
+6. An IPv4-shaped string.
+7. An email address.
+8. A date in `YYYY-MM-DD` format.
+
+## Exercise 4: Combine BS4 and Regex
+
+Given:
+
+```html
+<table>
+    <tr>
+        <th>Server: 192.168.1.100</th>
+    </tr>
+
+    <tr>
+        <th>Version: 8.0.42-0ubuntu0.20.04.1</th>
+    </tr>
+
+    <tr>
+        <th>Email: admin@example.com</th>
+    </tr>
+</table>
+```
+
+Tasks:
+
+1. Parse the HTML using BeautifulSoup.
+2. Extract all `<th>` elements.
+3. Extract the text from each element.
+4. Use Regex to extract the IP address.
+5. Use Regex to extract the version.
+6. Use Regex to extract the email address.
+
+---
+
+# FINAL REFERENCE: IMPORTS
+
+```python
+import re
+import requests
+
+from bs4 import BeautifulSoup
+```
+
+## BeautifulSoup: Methods to Practise First
+
+```python
+soup.find()
+soup.find_all()
+
+soup.select_one()
+soup.select()
+
+element.get_text()
+element.get()
+
+element.find_parent()
+element.find_next_sibling()
+element.find_previous_sibling()
+
+soup.prettify()
+```
+
+## Regex: Functions to Practise First
+
+```python
+re.search()
+re.match()
+re.fullmatch()
+
+re.findall()
+re.finditer()
+
+re.sub()
+re.split()
+
+re.compile()
+```
+
+## My Recommended Learning Order
+
+1. Understand HTML tags and attributes.
+2. Learn `BeautifulSoup()`.
+3. Practise `find()` and `find_all()`.
+4. Learn `get_text()` and `get()`.
+5. Practise CSS selectors.
+6. Learn HTML tree navigation.
+7. Practise extracting tables and links.
+8. Learn Regex character classes.
+9. Learn Regex quantifiers and special characters.
+10. Practise `search()`, `findall()`, and `sub()`.
+11. Learn capturing groups.
+12. Combine BeautifulSoup and Regex in small projects.
+
+**Final advice:** Do not rush into combining libraries. Become comfortable extracting clean text with BeautifulSoup first. Then learn Regex independently. Finally, combine them when you need to extract specific patterns from the HTML content.
